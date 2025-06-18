@@ -118,26 +118,36 @@ class TocTree(SphinxDirective):
                 docname = docname_join(self.env.docname, docname)
                 if url_re.match(ref) or ref == 'self':
                     toctree['entries'].append((title, ref))
-                elif docname not in self.env.found_docs:
-                    if excluded(self.env.doc2path(docname, False)):
-                        message = __('toctree contains reference to excluded document %r')
-                        subtype = 'excluded'
-                    else:
-                        message = __('toctree contains reference to nonexisting document %r')
-                        subtype = 'not_readable'
-
-                    logger.warning(message, docname, type='toc', subtype=subtype,
-                                   location=toctree)
-                    self.env.note_reread()
                 else:
-                    if docname in all_docnames:
-                        all_docnames.remove(docname)
-                    else:
-                        logger.warning(__('duplicated entry found in toctree: %s'), docname,
-                                       location=toctree)
+                    special_docs = {
+                        'genindex': 'genindex',
+                        'modindex': 'py-modindex',
+                        'py-modindex': 'py-modindex',
+                        'search': 'search',
+                    }
+                    target = special_docs.get(docname)
+                    if target:
+                        toctree['entries'].append((title, target))
+                    elif docname not in self.env.found_docs:
+                        if excluded(self.env.doc2path(docname, False)):
+                            message = __('toctree contains reference to excluded document %r')
+                            subtype = 'excluded'
+                        else:
+                            message = __('toctree contains reference to nonexisting document %r')
+                            subtype = 'not_readable'
 
-                    toctree['entries'].append((title, docname))
-                    toctree['includefiles'].append(docname)
+                        logger.warning(message, docname, type='toc', subtype=subtype,
+                                       location=toctree)
+                        self.env.note_reread()
+                    else:
+                        if docname in all_docnames:
+                            all_docnames.remove(docname)
+                        else:
+                            logger.warning(__('duplicated entry found in toctree: %s'), docname,
+                                           location=toctree)
+
+                        toctree['entries'].append((title, docname))
+                        toctree['includefiles'].append(docname)
 
         # entries contains all entries (self references, external links etc.)
         if 'reversed' in self.options:

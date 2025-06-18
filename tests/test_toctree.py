@@ -37,3 +37,9 @@ def test_numbered_toctree(app, status, warning):
     index = re.sub(':numbered:.*', ':numbered: 1', index)
     (app.srcdir / 'index.rst').write_text(index, encoding='utf8')
     app.builder.build_all()
+
+
+@pytest.mark.sphinx(testroot='toctree-indexpages')
+def test_index_pages_in_toctree(app, status, warning):
+    app.builder.build_all()
+    assert 'nonexisting document' not in warning.getvalue()

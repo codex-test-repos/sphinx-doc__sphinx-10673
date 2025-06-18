@@ -6,7 +6,7 @@ from docutils import nodes
 from docutils.nodes import Element, Node
 
 from sphinx import addnodes
-from sphinx.locale import __
+from sphinx.locale import _, __
 from sphinx.util import logging, url_re
 from sphinx.util.matching import Matcher
 from sphinx.util.nodes import clean_astext, process_only_nodes
@@ -139,6 +139,22 @@ class TocTree:
                         item = nodes.list_item('', para)
                         # don't show subitems
                         toc = nodes.bullet_list('', item)
+                    elif ref in {'genindex', 'modindex', 'py-modindex', 'search'}:
+                        ref = 'py-modindex' if ref == 'modindex' else ref
+                        if not title:
+                            titles = {
+                                'genindex': _('Index'),
+                                'py-modindex': _('Module Index'),
+                                'search': _('Search Page'),
+                            }
+                            title = titles.get(ref, ref)
+                        reference = nodes.reference('', '', internal=True,
+                                                    refuri=ref,
+                                                    anchorname='',
+                                                    *[nodes.Text(title)])
+                        para = addnodes.compact_paragraph('', '', reference)
+                        item = nodes.list_item('', para)
+                        toc = nodes.bullet_list('', item)
                     else:
                         if ref in parents:
                             logger.warning(__('circular toctree references '
@@ -165,14 +181,31 @@ class TocTree:
                                        ref, location=toctreenode)
                 except KeyError:
                     # this is raised if the included file does not exist
-                    if excluded(self.env.doc2path(ref, False)):
-                        message = __('toctree contains reference to excluded document %r')
-                    elif not included(self.env.doc2path(ref, False)):
-                        message = __('toctree contains reference to non-included document %r')
+                    if ref in {'genindex', 'modindex', 'py-modindex', 'search'}:
+                        ref = 'py-modindex' if ref == 'modindex' else ref
+                        if not title:
+                            titles = {
+                                'genindex': _('Index'),
+                                'py-modindex': _('Module Index'),
+                                'search': _('Search Page'),
+                            }
+                            title = titles.get(ref, ref)
+                        reference = nodes.reference('', '', internal=True,
+                                                    refuri=ref,
+                                                    anchorname='',
+                                                    *[nodes.Text(title)])
+                        para = addnodes.compact_paragraph('', '', reference)
+                        item = nodes.list_item('', para)
+                        toc = nodes.bullet_list('', item)
                     else:
-                        message = __('toctree contains reference to nonexisting document %r')
+                        if excluded(self.env.doc2path(ref, False)):
+                            message = __('toctree contains reference to excluded document %r')
+                        elif not included(self.env.doc2path(ref, False)):
+                            message = __('toctree contains reference to non-included document %r')
+                        else:
+                            message = __('toctree contains reference to nonexisting document %r')
 
-                    logger.warning(message, ref, location=toctreenode)
+                        logger.warning(message, ref, location=toctreenode)
                 else:
                     # if titles_only is given, only keep the main title and
                     # sub-toctrees
